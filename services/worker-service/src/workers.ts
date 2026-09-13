@@ -1,7 +1,7 @@
 import { connectRabbitMQ, setupQueue, shouldRetry, getDeathCount, MAX_RETRY_ATTEMPTS } from '@flashforge/shared-rabbitmq';
 import { getEnv } from '@flashforge/shared-config';
 import { createLogger } from '@flashforge/shared-logger';
-import { handlePaymentSuccess } from './handlers/payment.handler';
+import { handlePaymentSuccess, handlePaymentFailure } from './handlers/payment.handler';
 import { handleOrderCreation } from './handlers/order.handler';
 
 const logger = createLogger('worker-service');
@@ -10,10 +10,7 @@ export async function startWorkers() {
   const rmqUrl = getEnv('RABBITMQ_URL', 'amqp://localhost:5672');
   const { channel } = await connectRabbitMQ({ url: rmqUrl });
 
-
-
   channel.prefetch(1);
-
 
   const paymentQueue = await setupQueue('payment.events.queue', ['payment.*']);
   const orderQueue = await setupQueue('order.events.queue', ['order.*']);
@@ -27,6 +24,8 @@ export async function startWorkers() {
       const payload = JSON.parse(msg.content.toString());
       if (routingKey === 'payment.success') {
         await handlePaymentSuccess(payload);
+      } else if (routingKey === 'payment.failed') {
+        await handlePaymentFailure(payload);
       }
       channel.ack(msg);
     } catch (err) {

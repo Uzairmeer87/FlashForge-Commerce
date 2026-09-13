@@ -78,10 +78,42 @@ export async function handlePaymentSuccess(payload: PaymentSuccessPayload) {
   }
 
   if (commitFailures.length > 0) {
-
-
     logger.warn({ commitFailures, sessionId }, 'Some reservations could not be committed');
   }
 
   logger.info({ sessionId }, 'payment.success event handled successfully');
 }
+
+interface PaymentFailurePayload {
+  sessionId: string;
+  reservationIds: string[];
+}
+
+export async function handlePaymentFailure(payload: PaymentFailurePayload) {
+  const { sessionId, reservationIds } = payload;
+  logger.warn({ sessionId, reservationIds }, 'Handling payment.failed event — starting inventory release saga');
+
+  if (!reservationIds || reservationIds.length === 0) {
+    logger.info({ sessionId }, 'No reservation IDs to release for failed payment');
+    return;
+  }
+
+  const releaseFailures: string[] = [];
+  for (const reservationId of reservationIds) {
+    try {
+      await axios.post(`${inventoryServiceUrl}/reservations/${reservationId}/release`);
+      logger.info({ reservationId, sessionId }, 'Inventory reservation released successfully');
+    } catch (err) {
+      logger.error({ err, reservationId, sessionId }, 'Failed to release inventory reservation');
+      releaseFailures.push(reservationId);
+    }
+  }
+
+  if (releaseFailures.length > 0) {
+    logger.error({ releaseFailures, sessionId }, 'Some inventory reservations could not be released');
+    throw new Error(`Failed to release reservations: ${releaseFailures.join(', ')}`);
+  }
+
+  logger.info({ sessionId }, 'payment.failed saga compensation completed successfully');
+}
+

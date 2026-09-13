@@ -7,11 +7,11 @@ const orderService = new OrderService();
 const createOrderSchema = z.object({
   sessionId: z.string(),
   userId: z.string(),
-  totalAmount: z.number().int().positive(),
+  totalAmount: z.number().positive(),
   items: z.array(z.object({
     productId: z.string(),
     quantity: z.number().int().positive(),
-    price: z.number().int().positive()
+    price: z.number().positive()
   })).min(1)
 });
 

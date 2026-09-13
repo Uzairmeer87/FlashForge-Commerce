@@ -11,7 +11,7 @@ const createSessionSchema = z.object({
   cart: z.array(z.object({
     productId: z.string(),
     quantity: z.number().int().positive(),
-    price: z.number().int().positive()
+    price: z.number().positive()
   }))
 });
 

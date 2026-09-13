@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useCallback, useState } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CartItem, Product } from '@/lib/types';
 
@@ -16,10 +16,13 @@ type CartAction =
   | { type: 'CLEAR' }
   | { type: 'TOGGLE_CART' }
   | { type: 'OPEN_CART' }
-  | { type: 'CLOSE_CART' };
+  | { type: 'CLOSE_CART' }
+  | { type: 'HYDRATE'; items: CartItem[] };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
+    case 'HYDRATE':
+      return { ...state, items: action.items };
     case 'ADD_ITEM': {
       const existing = state.items.find(i => i.productId === action.product.id);
       if (existing) {
@@ -100,6 +103,33 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   const [state, dispatch] = useReducer(cartReducer, { items: [], isOpen: false });
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('flashforge_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          dispatch({ type: 'HYDRATE', items: parsed });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load cart from localStorage', e);
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) {
+      try {
+        localStorage.setItem('flashforge_cart', JSON.stringify(state.items));
+      } catch (e) {
+        console.error('Failed to save cart to localStorage', e);
+      }
+    }
+  }, [state.items, hydrated]);
 
   const addItem    = useCallback((product: Product) => dispatch({ type: 'ADD_ITEM', product }), []);
   const removeItem = useCallback((productId: string) => dispatch({ type: 'REMOVE_ITEM', productId }), []);

@@ -4,15 +4,13 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/components/Providers';
 import { checkoutApi } from '@/lib/api';
+import { getOrSetUserId } from '@/lib/user';
 import { ShoppingBag, CreditCard, ArrowRight, CheckCircle, Loader2, User, MapPin, Lock } from 'lucide-react';
 import Link from 'next/link';
 
 type Step = 'review' | 'payment' | 'success';
 
 function formatPrice(cents: number) { return (cents / 100).toFixed(2); }
-
-const DEMO_USER_ID = 'user-demo-001';
-
 
 function StepIndicator({ current }: { current: Step }) {
   const steps: { key: Step; label: string }[] = [
@@ -92,7 +90,8 @@ export default function CheckoutPage() {
     setLoading(true); setError(null);
     try {
       const cartPayload = items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price }));
-      const session = await checkoutApi.createSession(DEMO_USER_ID, cartPayload);
+      const userId = getOrSetUserId();
+      const session = await checkoutApi.createSession(userId, cartPayload);
       const key     = `checkout-${session.id}-${Date.now()}`;
       const order   = await checkoutApi.confirm(session.id, key);
       setOrderId(order.id);

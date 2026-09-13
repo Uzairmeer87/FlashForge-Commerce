@@ -3,11 +3,10 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { orderApi } from '@/lib/api';
+import { getOrSetUserId } from '@/lib/user';
 import { Package, Clock, CheckCircle, XCircle, RotateCcw, Zap } from 'lucide-react';
 import Link from 'next/link';
 import type { Order } from '@/lib/types';
-
-const DEMO_USER_ID = 'user-demo-001';
 
 function formatPrice(cents: number) { return (cents / 100).toFixed(2); }
 function formatDate(iso: string) {
@@ -33,7 +32,7 @@ function StatusBadge({ status }: { status: Order['status'] }) {
 function OrderCard({ order }: { order: Order }) {
   return (
     <div className="glass-card" style={{ padding: 'clamp(1rem, 4vw, 1.5rem)' }}>
-      {}
+      {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
         <div className="min-w-0">
           <p className="font-semibold" style={{ fontSize: 'clamp(0.875rem, 2.5vw, 1rem)' }}>Order</p>
@@ -44,7 +43,7 @@ function OrderCard({ order }: { order: Order }) {
         <StatusBadge status={order.status} />
       </div>
 
-      {}
+      {/* Items */}
       <div className="flex flex-col gap-2 mb-4">
         {order.items.map(item => (
           <div key={item.id} className="flex justify-between gap-4 text-sm flex-wrap" style={{ color: 'var(--text-secondary)' }}>
@@ -56,7 +55,7 @@ function OrderCard({ order }: { order: Order }) {
         ))}
       </div>
 
-      {}
+      {/* Footer */}
       <div className="flex items-center justify-between pt-3 flex-wrap gap-2" style={{ borderTop: '1px solid var(--border)' }}>
         <span style={{ fontSize: 'clamp(0.7rem, 1.5vw, 0.75rem)', color: 'var(--text-muted)' }}>
           {formatDate(order.createdAt)}
@@ -70,9 +69,16 @@ function OrderCard({ order }: { order: Order }) {
 }
 
 export default function OrdersPage() {
+  const [userId, setUserId] = React.useState<string>('');
+
+  React.useEffect(() => {
+    setUserId(getOrSetUserId());
+  }, []);
+
   const { data: orders, isLoading, isError } = useQuery({
-    queryKey: ['orders', DEMO_USER_ID],
-    queryFn: () => orderApi.getByUser(DEMO_USER_ID),
+    queryKey: ['orders', userId],
+    queryFn: () => orderApi.getByUser(userId),
+    enabled: Boolean(userId),
   });
 
   return (

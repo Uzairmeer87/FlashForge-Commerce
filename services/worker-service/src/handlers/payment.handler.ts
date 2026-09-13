@@ -1,6 +1,7 @@
 import { createLogger } from '@flashforge/shared-logger';
 import axios from 'axios';
 import { getEnv } from '@flashforge/shared-config';
+import { publishEvent } from '@flashforge/shared-rabbitmq';
 
 const logger = createLogger('worker-service:payment');
 const orderServiceUrl = getEnv('ORDER_SERVICE_URL', 'http://localhost:4005/api/orders');
@@ -14,22 +15,16 @@ interface PaymentSuccessPayload {
   totalAmount: number;
 }
 
-
-
-
-
-
-
-
 export async function handlePaymentSuccess(payload: PaymentSuccessPayload) {
   const { sessionId, userId, reservationIds, cart, totalAmount } = payload;
 
   logger.info({ sessionId, userId }, 'Handling payment.success event');
 
+  let orderData: any = null;
 
   try {
     const idempotencyKey = `order-${sessionId}`;
-    await axios.post(
+    const response = await axios.post(
       `${orderServiceUrl}`,
       {
         sessionId,
@@ -45,14 +40,27 @@ export async function handlePaymentSuccess(payload: PaymentSuccessPayload) {
         headers: { 'x-idempotency-key': idempotencyKey },
       }
     );
-    logger.info({ sessionId }, 'Order created successfully');
-  } catch (err: any) {
+    orderData = response.data?.data;
+    logger.info({ sessionId, orderId: orderData?.id }, 'Order created successfully');
 
+    try {
+      await publishEvent('order.created', {
+        orderId: orderData?.id,
+        sessionId,
+        userId,
+        totalAmount,
+        items: cart,
+        createdAt: new Date().toISOString(),
+      });
+      logger.info({ sessionId, orderId: orderData?.id }, 'Published order.created event');
+    } catch (pubErr) {
+      logger.error({ err: pubErr, sessionId }, 'Failed to publish order.created event');
+    }
+  } catch (err: any) {
     if (err?.response?.status === 409) {
       logger.warn({ sessionId }, 'Order already exists for session — skipping creation');
     } else {
       logger.error({ err, sessionId }, 'Failed to create order after payment success');
-
       throw err;
     }
   }

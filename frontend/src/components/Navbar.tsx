@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, Zap, Package, Menu, X } from 'lucide-react';
 import { useCart } from './Providers';
+import UserDropdown from './UserDropdown';
 
 export default function Navbar() {
   const { itemCount, toggleCart } = useCart();
@@ -26,13 +27,11 @@ export default function Navbar() {
     prevCount.current = itemCount;
   }, [itemCount]);
 
-
   useEffect(() => {
     const onResize = () => { if (window.innerWidth >= 768) setMobile(false); };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
@@ -57,7 +56,6 @@ export default function Navbar() {
           boxShadow: scrolled ? '0 4px 40px rgba(0,0,0,0.5)' : 'none',
         }}
       >
-        {}
         <div className="absolute top-0 left-0 right-0 h-px" style={{
           background: 'linear-gradient(90deg, transparent 0%, #f97316 20%, #f59e0b 50%, #f97316 80%, transparent 100%)',
           opacity: scrolled ? 1 : 0.4,
@@ -71,7 +69,6 @@ export default function Navbar() {
             height: 'clamp(56px, 8vw, 68px)',
           }}
         >
-          {}
           <Link href="/" className="flex items-center gap-2 group shrink-0" onClick={() => setMobile(false)}>
             <div className="relative flex items-center justify-center" style={{ width: 36, height: 36 }}>
               <div
@@ -95,14 +92,12 @@ export default function Navbar() {
                 <span className="text-gradient">Flash</span>
                 <span style={{ color: 'var(--text-primary)' }}>Forge</span>
               </span>
-              {}
               <span className="hidden xs:block text-[9px] font-mono tracking-[0.2em] uppercase" style={{ color: 'var(--text-muted)' }}>
                 Commerce
               </span>
             </div>
           </Link>
 
-          {}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map(({ href, label, icon: Icon }) => (
               <Link
@@ -120,8 +115,8 @@ export default function Navbar() {
             ))}
           </div>
 
-          {}
           <div className="flex items-center gap-2">
+            <UserDropdown />
             {}
             <button
               onClick={toggleCart}

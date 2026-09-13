@@ -54,8 +54,6 @@
 
 ## 🏗️ Architecture
 
-<<<<<<< Updated upstream
-=======
 ```
 Browser / Prometheus (local)
         │
@@ -94,7 +92,7 @@ Browser / Prometheus (local)
 CB*  = opossum circuit breaker (5s timeout, trips at 50% errors, resets in 15s)
 DLQ  = 3-attempt retry with 5s TTL delay before permanent dead-letter queue
 ```
->>>>>>> Stashed changes
+
 
 
 <img width="1408" height="768" alt="architure" src="https://github.com/user-attachments/assets/ab85d5ff-cc41-4bd3-8bdd-9c6ae0b9e928" />
